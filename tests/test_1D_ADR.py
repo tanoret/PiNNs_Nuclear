@@ -1,17 +1,16 @@
+import sys
+sys.path.insert(0, '../Utils/')
+
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
-import time
-from scipy.optimize import minimize
-from fourier_projection import FourierFeatureProjection
 from pinn_ADR import PhysicsInformedNN_ADR
 from logger import Logger
-from lbfgs import lbfgs
 from lbfgs import Struct
 
 # Manually making sure the numpy random seeds are "the same" on all devices
-np.random.seed(1234)
-tf.random.set_seed(1234)
+np.random.seed(17)
+tf.random.set_seed(17)
 
 #############################
 # Parameters

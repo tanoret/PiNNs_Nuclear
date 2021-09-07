@@ -7,12 +7,29 @@ from lbfgs import Struct
 
 
 class PhysicsInformedNN_NS(object):
-  def __init__(self, layers, optimizer, logger, x_eq, y_eq, x_bc, y_bc, u_bc, v_bc, tp_properties):
-
+  def __init__(self, 
+               layers, 
+               optimizer, 
+               logger, 
+               points_dict,
+               bc_dict,
+               tp_properties):
+    
+      
+    # Setting up dimension and handling colocation and boundary points
+    # So far only dimension 2 is supported
+    
+    # Internal points
+    x_eq, y_eq = points_dict['x_eq'], points_dict['y_eq']
+    x_bc, y_bc = points_dict['x_bc'], points_dict['y_bc']
     X_f = np.concatenate([[x_bc, y_bc]], 1).T
     X_eq = np.concatenate([[x_eq, y_eq]], 1).T
+    
+    # Boundary points
+    u_bc, v_bc = bc_dict['u_bc'], bc_dict['v_bc']
     U_f = np.concatenate([[u_bc, v_bc]], 1).T
 
+    # Crating PiNN model
     ub, lb = X_f.max(), X_f.min()
     self.ub, self.lb = ub, lb
 

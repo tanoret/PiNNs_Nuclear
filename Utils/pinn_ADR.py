@@ -20,7 +20,7 @@ class PhysicsInformedNN_ADR(object):
                trainable_kernel=False,
                weight_projection=True):
 
-    # Setting up dimension and handling colocation and boundary pointd
+    # Setting up dimension and handling colocation and boundary points
     self.dim = dim
     if dim == 1:
       x_eq = points_dict['x_eq']
