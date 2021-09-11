@@ -66,6 +66,9 @@ class PhysicsInformedNN_ADR(object):
 
     self.u_f = tf.convert_to_tensor(u_bc, dtype=self.dtype) # Note: u_f stores the normals if bc_type == Robin or Homogeneous
     self.X_f = X_f
+    
+    # Flag to determine advection the direction for normalization
+    self.direction = 1
 
     # Create keras model
     self.restart_model()
@@ -88,9 +91,6 @@ class PhysicsInformedNN_ADR(object):
 
     # Assign boundary confition type
     self.bc_type = bc_type
-
-    # Flag to determine advection the direction for normalization
-    self.direction = 1
 
   # Defining custom activation
   def swish(self, x):
