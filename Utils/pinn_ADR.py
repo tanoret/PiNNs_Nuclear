@@ -489,7 +489,7 @@ class PhysicsInformedNN_ADR(object):
     layers = self.layers
 
     # Computing normalization bounds
-    if direction > 0:
+    if self.direction > 0:
       ub, lb = tf.math.reduce_max(self.x_eq), tf.math.reduce_min(self.x_eq)
     else:
       ub, lb = tf.math.reduce_min(self.x_eq), tf.math.reduce_max(self.x_eq)
