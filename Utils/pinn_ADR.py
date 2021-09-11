@@ -41,17 +41,12 @@ class PhysicsInformedNN_ADR(object):
       raise Exception('Dimension must be 1, 2, or 3')
 
     # Setting up input and output bounds for normalization
-    ub, lb = X_f.max(), X_f.min()
-    self.ub, self.lb = ub, lb
     self.kernel_projection = kernel_projection
     self.trainable_kernel = trainable_kernel
     self.gaussian_bound = layers[1]
     self.gaussian_scale = 1.
     self.layers = layers
     self.weight_projection = weight_projection
-
-    # Descriptive Keras model [2, 20, …, 20, 1]
-    self.restart_model()
 
     # Assign logegr, optimizer, and data type
     self.optimizer = optimizer
@@ -72,6 +67,9 @@ class PhysicsInformedNN_ADR(object):
     self.u_f = tf.convert_to_tensor(u_bc, dtype=self.dtype) # Note: u_f stores the normals if bc_type == Robin or Homogeneous
     self.X_f = X_f
 
+    # Create keras model
+    self.restart_model()
+
     # Initialize Lagrange multipliers for homogeneous penalty
     self.lambda_bc, self.lambda_u = 1.,  1.
     self.scaling_penalty = len(x_eq)**2
@@ -91,9 +89,12 @@ class PhysicsInformedNN_ADR(object):
     # Assign boundary confition type
     self.bc_type = bc_type
 
+    # Flag to determine advection the direction for normalization
+    self.direction = 1
+
   # Defining custom activation
   def swish(self, x):
-    return x * tf.math.sigmoid(x)
+    return x * tf.math.tanh(x)
 
   # Defining custom loss
   def __loss(self, lambda_bc = False, lambda_u = False):
@@ -101,8 +102,8 @@ class PhysicsInformedNN_ADR(object):
     residual_boundary = self.return_bc_loss()
     lambda_bc = lambda_bc if lambda_bc else self.lambda_bc
     lambda_u  = lambda_u  if lambda_u  else self.lambda_u
-    return  lambda_bc * tf.reduce_sum(tf.square(residual_boundary)) + \
-            lambda_u * tf.reduce_sum(tf.square(residual_internal)) + \
+    return lambda_u * tf.reduce_sum(tf.square(residual_internal)) + \
+            lambda_bc * tf.reduce_sum(tf.square(residual_boundary)) + \
             tf.constant(self.scaling_penalty, dtype=self.dtype) * \
             tf.square(
                tf.constant(lambda_bc, dtype=self.dtype) + \
@@ -125,6 +126,10 @@ class PhysicsInformedNN_ADR(object):
   def add_advection_term(self, velocity_name):
     self.residuals['advection']['flag'] = True
     self.residuals['advection']['velocity_name'] = velocity_name
+    if np.mean(self.coupled_fields[velocity_name]) > 0:
+      self.direction = 1
+    else:
+      self.direction = -1
 
   def add_diffusion_term(self, coef):
     self.residuals['diffusion']['flag'] = True
@@ -147,7 +152,7 @@ class PhysicsInformedNN_ADR(object):
 
     # Scaling boundary
     if self.bc_type == 'Dirichlet':
-      self.residuals['mean_boundary'] = tf.reduce_mean(self.u_f) * 0.
+      self.residuals['mean_boundary'] = tf.reduce_mean(self.u_f)
       self.u_f = self.u_f - self.residuals['mean_boundary']
     else:
       self.residuals['mean_boundary'] = tf.constant(0., dtype=self.dtype)
@@ -243,7 +248,7 @@ class PhysicsInformedNN_ADR(object):
 
     # Adding self reaction term
     if self.residuals['self_reaction']['flag']:
-      residual -= (self.residuals['self_reaction']['coef'] * u)
+      residual += (self.residuals['self_reaction']['coef'] * u)
 
     # Adding external sources
     if bool(self.residuals['external_reaction']):
@@ -288,9 +293,9 @@ class PhysicsInformedNN_ADR(object):
       del tape
 
       # Normal gradient
-      if self.dim >= 1: u_ng = self.u_f * u_x
-      if self.dim >= 2: u_ng += self.u_f * u_y
-      if self.dim >= 3: u_ng += self.u_f * u_z
+      if self.dim >= 1: u_ng = self.u_f[:,0] * u_x
+      if self.dim >= 2: u_ng += self.u_f[:,1] * u_y
+      if self.dim >= 3: u_ng += self.u_f[:,2] * u_z
 
       return u + 2*self.residuals['diffusion_boundary']['coef']*u_ng
 
@@ -316,9 +321,9 @@ class PhysicsInformedNN_ADR(object):
       del tape
 
       # Normal gradient
-      if self.dim >= 1: u_ng = self.u_f * u_x
-      if self.dim >= 2: u_ng += self.u_f * u_y
-      if self.dim >= 3: u_ng += self.u_f * u_z
+      if self.dim >= 1: u_ng = self.u_f[:,0] * u_x
+      if self.dim >= 2: u_ng += self.u_f[:,1] * u_y
+      if self.dim >= 3: u_ng += self.u_f[:,2] * u_z
 
       return u_ng
 
@@ -370,10 +375,11 @@ class PhysicsInformedNN_ADR(object):
   def fit(self,
           tf_epochs=5000,
           coupled_optimizer={'nt_config': Struct(), 'batches': 0},
-          restart_tf = True):
+          restart_tf = True,
+          restart_model = False):
 
     self.nomalize_total_source_and_boundary()
-    self.restart_model()
+    if restart_model: self.restart_model()
 
     def loss_and_flat_grad(w):
       with tf.GradientTape() as tape:
@@ -390,7 +396,7 @@ class PhysicsInformedNN_ADR(object):
 
     for n in range(coupled_optimizer['batches']):
 
-      self.restart_model()
+      if restart_model: self.restart_model()
 
       if restart_tf or n == 0:
 
@@ -481,6 +487,14 @@ class PhysicsInformedNN_ADR(object):
   def restart_model(self):
 
     layers = self.layers
+
+    # Computing normalization bounds
+    if direction > 0:
+      ub, lb = tf.math.reduce_max(self.x_eq), tf.math.reduce_min(self.x_eq)
+    else:
+      ub, lb = tf.math.reduce_min(self.x_eq), tf.math.reduce_max(self.x_eq)
+
+    self.ub, self.lb = ub, lb
 
     #self.gaussian_bound = 2**min(int(np.sqrt(layers[1])+1),12)
     self.u_model = tf.keras.Sequential()
