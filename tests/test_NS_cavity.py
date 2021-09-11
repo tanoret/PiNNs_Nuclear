@@ -45,49 +45,49 @@ coupled_optimizer['nt_config'].tolFun = 1.0 * np.finfo(float).eps
 coupled_optimizer['batches'] = n_batches
 
 
-###########################################
-# Setting up internal and boundary points
-###########################################
-
-# Domain
-x_min, x_max = 0., 2.
-y_min, y_max = 0., 2.
-
-# Boundaries
-bottom = (np.linspace(x_min,x_max,N_boundary), np.linspace(y_min,y_min,N_boundary))
-top    = (np.linspace(x_min,x_max,N_boundary), np.linspace(y_max,y_max,N_boundary))
-left   = (np.linspace(x_min,x_min,N_boundary), np.linspace(y_min,y_max,N_boundary))
-right  = (np.linspace(x_max,x_max,N_boundary), np.linspace(y_min,y_max,N_boundary))
-
-x_cord_bc = np.array([bottom[0], top[0], left[0], right[0]])
-y_cord_bc = np.array([bottom[1], top[1], left[1], right[1]])
-
-# Boundary conditions
-u_bc = np.array([bottom[0]*0., top[0]*0.+1., left[0]*0., right[0]*0.])
-v_bc = np.array([bottom[1]*0., top[1]*0.,    left[1]*0., right[1]*0.])
-
-# Internal points
-n_points = int(np.sqrt(N_internal))
-x_max, y_max = 2, 2
-delta_x, delta_y = x_max/n_points, y_max/n_points
-nx, ny = (n_points, n_points)
-nd = 4.0
-x = np.linspace(0 + delta_x/nd, x_max - delta_x/nd, nx)
-y = np.linspace(0 + delta_x/nd, y_max - delta_x/nd, ny)
-x_grid, y_grid = np.meshgrid(x, y)
-x_cord_int, y_cord_int = x_grid, y_grid
-
-# Creating dictionary of internal points
-points_dict = {}
-points_dict['x_eq'] = x_cord_int.flatten()
-points_dict['y_eq'] = y_cord_int.flatten()
-points_dict['x_bc'] = x_cord_bc.flatten()
-points_dict['y_bc'] = y_cord_bc.flatten()
-
-# Creating boundary conditions dictionary
-bc_dict = {}
-bc_dict['u_bc'] = u_bc.flatten()
-bc_dict['v_bc'] = v_bc.flatten()
+    ###########################################
+    # Setting up internal and boundary points
+    ###########################################
+    
+    # Domain
+    x_min, x_max = 0., 2.
+    y_min, y_max = 0., 2.
+    
+    # Boundaries
+    bottom = (np.linspace(x_min,x_max,N_boundary), np.linspace(y_min,y_min,N_boundary))
+    top    = (np.linspace(x_min,x_max,N_boundary), np.linspace(y_max,y_max,N_boundary))
+    left   = (np.linspace(x_min,x_min,N_boundary), np.linspace(y_min,y_max,N_boundary))
+    right  = (np.linspace(x_max,x_max,N_boundary), np.linspace(y_min,y_max,N_boundary))
+    
+    x_cord_bc = np.array([bottom[0], top[0], left[0], right[0]])
+    y_cord_bc = np.array([bottom[1], top[1], left[1], right[1]])
+    
+    # Boundary conditions
+    u_bc = np.array([bottom[0]*0., top[0]*0.+1., left[0]*0., right[0]*0.])
+    v_bc = np.array([bottom[1]*0., top[1]*0.,    left[1]*0., right[1]*0.])
+    
+    # Internal points
+    n_points = int(np.sqrt(N_internal))
+    x_max, y_max = 2, 2
+    delta_x, delta_y = x_max/n_points, y_max/n_points
+    nx, ny = (n_points, n_points)
+    nd = 4.0
+    x = np.linspace(0 + delta_x/nd, x_max - delta_x/nd, nx)
+    y = np.linspace(0 + delta_x/nd, y_max - delta_x/nd, ny)
+    x_grid, y_grid = np.meshgrid(x, y)
+    x_cord_int, y_cord_int = x_grid, y_grid
+    
+    # Creating dictionary of internal points
+    points_dict = {}
+    points_dict['x_eq'] = x_cord_int.flatten()
+    points_dict['y_eq'] = y_cord_int.flatten()
+    points_dict['x_bc'] = x_cord_bc.flatten()
+    points_dict['y_bc'] = y_cord_bc.flatten()
+    
+    # Creating boundary conditions dictionary
+    bc_dict = {}
+    bc_dict['u_bc'] = u_bc.flatten()
+    bc_dict['v_bc'] = v_bc.flatten()
 
 
 #########################################
